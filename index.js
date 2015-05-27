@@ -15,15 +15,23 @@ var command = require('shelly');
  * @api public
  */
 
-module.exports = function(file, execOpts, fn){
+module.exports = function(file, execOpts, commandOpts, fn){
   // rationalize options
   if(typeof execOpts === 'function') {
     fn = execOpts;
     execOpts = {};
+    commandOpts = '';
   }
+
+  if(typeof commandOpts === 'function') {
+    fn = commandOpts;
+    commandOpts = '';
+  }
+
   // REM : exiftool options http://www.sno.phy.queensu.ca/~phil/exiftool/exiftool_pod.html
   // -json : ask JSON output
-  var cmd = command('exiftool -json ?', file);
+  var cmd = command('exiftool -json '+commandOpts+' ? ', file);
+  
   exec(cmd, execOpts, function(err, str)
   {
     if(err) {

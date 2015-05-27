@@ -31,7 +31,7 @@ module.exports = function(file, execOpts, commandOpts, fn){
   // REM : exiftool options http://www.sno.phy.queensu.ca/~phil/exiftool/exiftool_pod.html
   // -json : ask JSON output
   var cmd = command('exiftool -json '+commandOpts+' ? ', file);
-  console.log(cmd)
+  
   exec(cmd, execOpts, function(err, str)
   {
     if(err) {

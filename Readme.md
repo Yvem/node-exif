@@ -4,7 +4,8 @@ Image meta-information (EXIF, IPTC, XMP...) extraction using [exiftool](http://w
 
 __NOTE__: This fork from https://github.com/Yvem/node-exif has a DIFFERENT
 (improved !) API.
- Changed the implementation.
+
+ Mayor Changes:
  Instead of calling 'exiftool' through 'child_process.exec', it calls:
  [child_process.spawn](https://nodejs.org/api/child_process
    .html#child_process_child_process_spawn_command_args_options) which avoids buffer limitations.
@@ -22,15 +23,15 @@ __NOTE__: This fork from https://github.com/Yvem/node-exif has a DIFFERENT
  (http://www.sno.phy.queensu.ca/%7Ephil/exiftool/)
 
  Params:
+
    @param {String} file or path to folder
 
    @param {Array} args [optional] List of string arguments to pass to
    [exiftool](http://www.sno.phy.queensu.ca/~phil/exiftool/exiftool_pod.html)
 
    @param {Object} opts [optional] Object that is passed to the
-   child_process.spawn method as the `options` argument
-
-  See options of [child_process.spawn](https://nodejs.org/api/child_process
+   child_process.spawn method as the `options` argument. See options of
+   [child_process.spawn](https://nodejs.org/api/child_process
   .html#child_process_child_process_spawn_command_args_options)
 
   @param {function} fn callback function to invoke `fn(err, data)`
@@ -222,9 +223,9 @@ var exifParams = ['-FileName', '-ImageWidth', '-ImageHeight', '-Orientation',
   '-FileType', '-MIMEType'];
 
 exif(file, exifParams,  function(err, metadata){
-  console.log(metadata[0].['ImageWidth']); // 900
+  console.log(metadata[0].['ImageWidth']);  // 900
   console.log(metadata[0].['ImageHeight']); // 596
-  console.log(metadata[1].['ImageWidth']); // 3776
+  console.log(metadata[1].['ImageWidth']);  // 3776
   console.log(metadata[1].['ImageHeight']); // 3129
 
 }
@@ -267,7 +268,9 @@ See [child_process.spawn](https://nodejs.org/api/child_process
       .html#child_process_child_process_spawn_command_args_options)
 
 ### Special execution
-For special cases, it is possible to provide options for the spawn process.
+For special cases, it is possible to provide options for the [spawn process]
+(https://nodejs.org/api/child_process
+                                                                                .html#child_process_child_process_spawn_command_args_options).
 `exif()` optional third parameter may be an `spawn()` option object as
 described here:
 
@@ -289,6 +292,7 @@ npm test
 and also
 ```bash
 make test
+make bench
 ````
 
 ## License 

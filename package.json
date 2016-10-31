@@ -15,10 +15,20 @@
   "main": "index",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Yvem/node-exif.git"
+    "url": "https://github.com/jmunox/node-exif.git"
   },
   "scripts": {
     "test": "mocha test/index.js --reporter spec",
     "bench": "matcha bench/index.js"
-  }
+  },
+  "contributors": [
+    {
+      "name": "Yves-Emmanuel Jutard",
+      "email": "ye.jutard@gmail.com"
+    },
+    {
+      "name": "Jesús Muñoz Alcántara",
+      "email": "jmunoza@live.com"
+    }
+  ]
 }

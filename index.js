@@ -3,37 +3,67 @@
  * Module dependencies.
  */
 
-var exec = require('child_process').exec;
-var command = require('shelly');
+const spawn = require('child_process').spawn;
+var shelly = require('shelly');
 
 /**
  * Fetch EXIF data from `file` and invoke `fn(err, data)`.
  *
  * @param {String} file
- * @param {Object} execOpts [optional] options to pass to exec() for a finer control
+ * @param {Array} args [optional] List of string arguments to pass to exiftool
  * @param {Function} fn
  * @api public
  */
 
-module.exports = function(file, execOpts, fn){
+/**
+ * Fetch EXIF data from `file` and invoke `fn(err, data)`. It spawns a child
+ * process (see child_process.spawn) and executes exiftool
+ * http://www.sno.phy.queensu.ca/%7Ephil/exiftool/
+ *
+ * @param {String} file
+ * @param {Array} args [optional] List of string arguments to pass to
+ * exiftool http://www.sno.phy.queensu.ca/~phil/exiftool/exiftool_pod.html
+ * @param {Object} opts [optional] Object that is passed to the
+ * child_process.spawn method as the `options` argument
+ * See options of child_process.spawn:
+ * https://nodejs.org/api/child_process.html#child_process_child_process_spawn_command_args_options
+ * @param {function} fn callback function to invoke `fn(err, data)`
+ */
+module.exports = function(file, args, opts, fn){
   // rationalize options
-  if(typeof execOpts === 'function') {
-    fn = execOpts;
-    execOpts = {};
+  if (typeof args === 'function') {
+    fn = args;
+    args = [];
+    opts = {};
+  } else if (typeof opts === 'function') {
+    fn = opts;
+    opts = {};
   }
+  args = args || [];
+
+  file = shelly(file);
   // REM : exiftool options http://www.sno.phy.queensu.ca/~phil/exiftool/exiftool_pod.html
   // -json : ask JSON output
-  var cmd = command('exiftool -json ?', file);
-  exec(cmd, execOpts, function(err, str)
-  {
-    if(err) {
-      if(err.message === 'stdout maxBuffer exceeded.')
-        err = new Error('Metadata too big !'); // convert to a clearer message
-      return fn(err);
+  var cmdArgs = ['-json', file].concat(args);
+  var stdout = '';
+  var exif = spawn('exiftool', cmdArgs , opts);
+
+  exif.stdout.on('data',  function (data) {
+    stdout += String(data);
+  });
+
+  exif.on('error', function (error) {
+    return fn(error);
+  });
+
+  exif.on('close', function (code)  {
+    if (code === 0) {
+      var obj = JSON.parse(stdout); // so easy
+      return fn(null, obj.length > 1 ? obj : obj[0]); // array if multiple files
     }
-
-    var obj = JSON.parse(str)[0]; // so easy
-
-    fn(null, obj);
+    else {
+      // http://www.tldp.org/LDP/abs/html/exitcodes.html#EXITCODESREF
+      return fn('Command closed unexpectedly, Exit Status Code: ' + code);
+    }
   });
 };

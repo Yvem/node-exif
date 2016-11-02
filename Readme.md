@@ -2,24 +2,49 @@
 
 Image meta-information (EXIF, IPTC, XMP...) extraction using [exiftool](http://www.sno.phy.queensu.ca/~phil/exiftool/)
 
-__NOTE__: This fork from https://github.com/visionmedia/node-exif has a DIFFERENT (improved !) API.
- It uses [precise tags](http://www.sno.phy.queensu.ca/~phil/exiftool/TagNames/index.html) for field access.
+__NOTE__: This fork from https://github.com/Yvem/node-exif has a DIFFERENT
+(improved !) API.
+
+ Mayor Changes:
+ Instead of calling 'exiftool' through 'child_process.exec', it calls:
+ [child_process.spawn](https://nodejs.org/api/child_process
+   .html#child_process_child_process_spawn_command_args_options) which avoids buffer limitations.
+ It also allows to send specific arguments to the 'exiftool' shell command
+ and to read EXIF info from multiple files at once.
 
 ## Installation
 
-    $ npm install Yvem/node-exif
+    $ npm install jmunox/node-exif
 
 ## Usage
+
+ * Fetch EXIF data from `file` and invoke `fn(err, data)`.
+ It spawns a child process (see child_process.spawn) and executes [exiftool]
+ (http://www.sno.phy.queensu.ca/%7Ephil/exiftool/)
+
+ Params:
+
+   @param {String} file or path to folder
+
+   @param {Array} args [optional] List of string arguments to pass to
+   [exiftool](http://www.sno.phy.queensu.ca/~phil/exiftool/exiftool_pod.html)
+
+   @param {Object} opts [optional] Object that is passed to the
+   child_process.spawn method as the `options` argument. See options of
+   [child_process.spawn](https://nodejs.org/api/child_process
+  .html#child_process_child_process_spawn_command_args_options)
+
+  @param {function} fn callback function to invoke `fn(err, data)`
 
 ```javascript
 var exif = require('exif2');
 
-exif(file, function(err, obj){
+exif(file, args, opts function(err, obj){
   console.log(obj);
 
   // see available tags http://www.sno.phy.queensu.ca/~phil/exiftool/TagNames/index.html
-  console.log(o['FileName']);
-  console.log(o['Caption-Abstract']); // IPTC Caption [2,120]
+  console.log(obj['FileName']);
+  console.log(obj['Caption-Abstract']); // IPTC Caption [2,120]
 })
 ```
 
@@ -150,23 +175,110 @@ exif(file, function(err, obj){
 
 ## Advanced usage
 
-### Errors
-node-exif may throw custom errors :
-
-* `Metadata too big !` when metadata are too big to be parsed with current buffer limitations
-
-### Special options
-For special cases, it is possible to provide exec options.
-`exif()` optional second parameter may be an `exec()` option object as described here :
-http://nodejs.org/api/child_process.html#child_process_child_process_exec_command_options_callback
-
-Example usage : augment stdout buffer size to handle images with huge metadata :
+### Parsing specific TagNames
+It is possible to parse specific EXIF metadata from a file by defining the
+TagNames in the Arguments:
 
 ```javascript
-// REM : default buffer value is 200*1024
-exif(file, { maxBuffer: 1024*1024 }, function(err, obj) {
+var exif = require('exif2');
+var file = 'test/fixtures/forest.jpg';
+var exifParams = ['-FileName', '-ImageHeight', '-ImageWidth', '-Orientation',
+  '-DateTimeOriginal', '-CreateDate', '-ModifyDate', '-FileAccessDate',
+  '-FileType', '-MIMEType'];
+
+   exif(file, exifParams,  function(err, metadata){
+
+     console.log(metadata.['ImageHeight']);
+     console.log(metadata.['ImageWidth']);
+   }
+
+```
+
+```json
+{
+	"SourceFile": "test/fixtures/forest.jpeg",
+	"FileName": "forest.jpeg",
+	"ImageWidth": 900,
+    "ImageHeight": 596
+    "Orientation": "Horizontal (normal)",
+	"DateTimeOriginal": "2012:10:07 11:36:30",
+    "CreateDate": "2012:10:07 11:36:30",
+    "ModifyDate": "2012:10:08 19:10:63",
+	"FileAccessDate": "2014:03:24 15:27:05+01:00",
+	"FileType": "JPEG",
+	"MIMEType": "image/jpeg"
+}
+```
+
+### Parsing EXIF from several media files in path
+It is also possible to parse EXIF metadata from all the media file by setting
+ the path to a specific folder. The data is returned in an Array. This is
+ more efficient, instead of calling `exif` for each file in the folder.
+
+```javascript
+var exif = require('exif2');
+var path = 'test/fixtures/';
+var exifParams = ['-FileName', '-ImageWidth', '-ImageHeight', '-Orientation',
+  '-DateTimeOriginal', '-CreateDate', '-ModifyDate', '-FileAccessDate',
+  '-FileType', '-MIMEType'];
+
+exif(file, exifParams,  function(err, metadata){
+  console.log(metadata[0].['ImageWidth']);  // 900
+  console.log(metadata[0].['ImageHeight']); // 596
+  console.log(metadata[1].['ImageWidth']);  // 3776
+  console.log(metadata[1].['ImageHeight']); // 3129
+
+}
+```
+Result:
+```json
+[{
+	"SourceFile": "test/fixtures/forest.jpeg",
+    "FileName": "forest.jpeg",
+	"ImageWidth": 900,
+	"ImageHeight": 596,
+    "Orientation": "Horizontal (normal)",
+	"DateTimeOriginal": "2012:10:07 11:36:30",
+    "CreateDate": "2012:10:07 11:36:30",
+    "ModifyDate": "2012:10:08 19:10:63",
+	"FileAccessDate": "2014:03:24 15:27:05+01:00",
+	"FileType": "JPEG",
+	"MIMEType": "image/jpeg"
+},
+{
+    "SourceFile": "test/fixtures/le_livre_de_photographies_vol_III_Phaidon.jpg",
+    "FileName": "le_livre_de_photographies_vol_III_Phaidon.jpg",
+    "ImageWidth": 3776,
+    "ImageHeight": 3129,
+    "Orientation": "Horizontal (normal)",
+    "CreateDate": "2014:01:09 12:52:13+01:00",
+    "ModifyDate": "2014:01:09 15:36:23",
+    "FileAccessDate": "2016:10:31 16:24:05+01:00",
+    "FileType": "JPEG",
+    "MIMEType": "image/jpeg"
+}]
+```
+### No more known buffer limitation
+
+Since this version uses `child_process.spawn()` instead of
+`child_process.exec()`, the output is handled in a different way, avoiding
+buffer limitations.
+
+See [child_process.spawn](https://nodejs.org/api/child_process
+      .html#child_process_child_process_spawn_command_args_options)
+
+### Special execution
+For special cases, it is possible to provide options for the [spawn process]
+(https://nodejs.org/api/child_process.html#child_process_child_process_spawn_command_args_options).
+`exif()` optional third parameter may be an `spawn()` option object as
+described here:
+
+```javascript
+var opts = { cwd: undefined, env: process.env };
+exif(file, args, opts, function(err, obj) {
   console.log(obj);
 })
+
 ```
 
 ## Test / contribute

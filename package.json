@@ -15,7 +15,7 @@
   "main": "index",
   "repository": {
     "type": "git",
-    "url": "https://github.com/jmunox/node-exif.git"
+    "url": "https://github.com/Yvem/node-exif.git"
   },
   "scripts": {
     "test": "mocha test/index.js --reporter spec",

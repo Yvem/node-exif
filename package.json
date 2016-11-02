@@ -1,5 +1,5 @@
 {
-  "name": "@jmunox/exif2",
+  "name": "exif2",
   "version": "1.3.0",
   "description": "EXIF extraction with exiftool",
   "keywords": [],
